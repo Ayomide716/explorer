@@ -44,6 +44,55 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
   const warpStartTimeRef = useRef(0);
   const [currentParams, setCurrentParams] = useState(initialParams);
 
+  const generateAsteroidBelt = useCallback((scene: THREE.Scene, radius: number, count: number, speed: number, beltIndex: number) => {
+    if (asteroidBeltsRef.current[beltIndex]) {
+        scene.remove(asteroidBeltsRef.current[beltIndex]);
+        asteroidBeltsRef.current[beltIndex].traverse((object) => {
+            if (object instanceof THREE.Mesh) {
+                object.geometry.dispose();
+                const material = object.material as THREE.Material | THREE.Material[];
+                if (Array.isArray(material)) {
+                    material.forEach(m => m.dispose());
+                } else {
+                    material.dispose();
+                }
+            }
+        });
+    }
+
+    const belt = new THREE.Group();
+    belt.userData = { speed };
+    const asteroidGeometries: THREE.BufferGeometry[] = [];
+    const asteroidMaterial = new THREE.MeshStandardMaterial({
+        color: 0x888888,
+        roughness: 0.8,
+        metalness: 0.5
+    });
+
+    for(let i=0; i<30; i++) {
+        const geo = new THREE.IcosahedronGeometry(Math.random() * 0.05 + 0.02, 0);
+        asteroidGeometries.push(geo);
+    }
+    
+    for (let i = 0; i < count; i++) {
+        const geometryIndex = Math.floor(Math.random() * asteroidGeometries.length);
+        const asteroid = new THREE.Mesh(asteroidGeometries[geometryIndex], asteroidMaterial);
+
+        const angle = Math.random() * Math.PI * 2;
+        const r = radius + (Math.random() - 0.5) * 0.5;
+        const y = (Math.random() - 0.5) * 0.1;
+        
+        asteroid.position.set(Math.cos(angle) * r, y, Math.sin(angle) * r);
+        asteroid.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+        belt.add(asteroid);
+    }
+    
+    scene.add(belt);
+    asteroidBeltsRef.current[beltIndex] = belt;
+
+    asteroidGeometries.forEach(geo => geo.dispose());
+  }, []);
+
   const generateGalaxy = useCallback((parameters: GalaxyParameters) => {
     if (!sceneRef.current) return;
   
@@ -114,42 +163,10 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
 
     const points = new THREE.Points(geometry, material);
     newGalaxy.add(points);
-  }, []);
+    generateAsteroidBelt(sceneRef.current, parameters.radius + 1.0, 300, 0.05, 0);
+    generateAsteroidBelt(sceneRef.current, parameters.radius + 2.5, 400, 0.03, 1);
+  }, [generateAsteroidBelt]);
 
-  const generateAsteroidBelt = useCallback((scene: THREE.Scene, radius: number, count: number, speed: number, beltIndex: number) => {
-    const belt = new THREE.Group();
-    belt.userData = { speed };
-    const asteroidGeometries: THREE.BufferGeometry[] = [];
-    const asteroidMaterial = new THREE.MeshStandardMaterial({
-        color: 0x888888,
-        roughness: 0.8,
-        metalness: 0.5
-    });
-
-    for(let i=0; i<30; i++) {
-        const geo = new THREE.IcosahedronGeometry(Math.random() * 0.05 + 0.02, 0);
-        asteroidGeometries.push(geo);
-    }
-    
-    for (let i = 0; i < count; i++) {
-        const geometryIndex = Math.floor(Math.random() * asteroidGeometries.length);
-        const asteroid = new THREE.Mesh(asteroidGeometries[geometryIndex], asteroidMaterial);
-
-        const angle = Math.random() * Math.PI * 2;
-        const r = radius + (Math.random() - 0.5) * 0.5;
-        const y = (Math.random() - 0.5) * 0.1;
-        
-        asteroid.position.set(Math.cos(angle) * r, y, Math.sin(angle) * r);
-        asteroid.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
-        belt.add(asteroid);
-    }
-    
-    scene.add(belt);
-    asteroidBeltsRef.current[beltIndex] = belt;
-
-    // Dispose geometries after creating meshes to save memory
-    asteroidGeometries.forEach(geo => geo.dispose());
-}, []);
 
   useImperativeHandle(ref, () => ({
     regenerate: (params: GalaxyParameters) => {
@@ -267,9 +284,7 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
     scene.add(directionalLight);
 
     generateGalaxy(currentParams);
-    generateAsteroidBelt(scene, 4, 300, 0.05, 0);
-    generateAsteroidBelt(scene, 5.5, 400, 0.03, 1);
-
+    
     const clock = new THREE.Clock();
     let animationFrameId: number;
     const animate = () => {
@@ -359,7 +374,7 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
         }
       }
     };
-  }, [generateGalaxy, generateAsteroidBelt, isWarping]);
+  }, [generateGalaxy, isWarping]);
 
   useEffect(() => {
     generateGalaxy(currentParams);
