@@ -10,12 +10,25 @@ import {
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
+export interface GalaxyParameters {
+  count: number;
+  radius: number;
+  branches: number;
+  spin: number;
+  randomness: number;
+  randomnessPower: number;
+}
+
 export interface GalaxyCanvasHandle {
-  regenerate: () => void;
+  regenerate: (params: GalaxyParameters) => void;
   setCameraPosition: (preset: 'top' | 'side') => void;
 }
 
-const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, {}>((props, ref) => {
+type GalaxyCanvasProps = {
+  initialParams: GalaxyParameters;
+}
+
+const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initialParams }, ref) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -23,7 +36,7 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, {}>((props, ref) => {
   const controlsRef = useRef<OrbitControls | null>(null);
   const galaxyRef = useRef<THREE.Group | null>(null);
 
-  const generateGalaxy = useCallback(() => {
+  const generateGalaxy = useCallback((parameters: GalaxyParameters) => {
     if (!sceneRef.current) return;
 
     if (galaxyRef.current) {
@@ -39,28 +52,18 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, {}>((props, ref) => {
       galaxyRef.current = new THREE.Group();
       sceneRef.current.add(galaxyRef.current);
     }
-
-    const parameters = {
-      count: 100000,
-      size: 0.01,
-      radius: 5,
-      branches: 3 + Math.floor(Math.random() * 7),
-      spin: Math.random() - 0.5,
-      randomness: 0.2 + Math.random() * 1.8,
-      randomnessPower: 2 + Math.random() * 3,
-      insideColor: new THREE.Color(),
-      outsideColor: new THREE.Color(),
-    };
-
-    parameters.insideColor.setHSL(Math.random(), 0.8, 0.6);
-    parameters.outsideColor.setHSL(Math.random(), 0.8, 0.4);
+    
+    const insideColor = new THREE.Color();
+    insideColor.setHSL(Math.random(), 0.8, 0.6);
+    const outsideColor = new THREE.Color();
+    outsideColor.setHSL(Math.random(), 0.8, 0.4);
 
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(parameters.count * 3);
     const colors = new Float32Array(parameters.count * 3);
     
-    const colorInside = parameters.insideColor;
-    const colorOutside = parameters.outsideColor;
+    const colorInside = insideColor;
+    const colorOutside = outsideColor;
 
     for (let i = 0; i < parameters.count; i++) {
         const i3 = i * 3;
@@ -88,7 +91,7 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, {}>((props, ref) => {
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     const material = new THREE.PointsMaterial({
-        size: parameters.size,
+        size: 0.01,
         sizeAttenuation: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
@@ -100,8 +103,8 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, {}>((props, ref) => {
   }, []);
 
   useImperativeHandle(ref, () => ({
-    regenerate: () => {
-      generateGalaxy();
+    regenerate: (params: GalaxyParameters) => {
+      generateGalaxy(params);
     },
     setCameraPosition: (preset: 'top' | 'side') => {
       if (cameraRef.current && controlsRef.current) {
@@ -142,7 +145,7 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, {}>((props, ref) => {
     controls.autoRotateSpeed = 0.2;
     controlsRef.current = controls;
 
-    generateGalaxy();
+    generateGalaxy(initialParams);
 
     let animationFrameId: number;
     const animate = () => {
@@ -185,7 +188,7 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, {}>((props, ref) => {
         }
       }
     };
-  }, [generateGalaxy]);
+  }, [generateGalaxy, initialParams]);
 
   return <div ref={mountRef} className="absolute inset-0 z-0" />;
 });
