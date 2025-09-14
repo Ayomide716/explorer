@@ -163,8 +163,8 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
 
     const points = new THREE.Points(geometry, material);
     newGalaxy.add(points);
-    generateAsteroidBelt(sceneRef.current, parameters.radius + 1.0, 300, 0.05, 0);
-    generateAsteroidBelt(sceneRef.current, parameters.radius + 2.5, 400, 0.03, 1);
+    generateAsteroidBelt(sceneRef.current, parameters.radius + 1.0, 300, 0.005, 0);
+    generateAsteroidBelt(sceneRef.current, parameters.radius + 2.5, 400, 0.003, 1);
   }, [generateAsteroidBelt]);
 
 
