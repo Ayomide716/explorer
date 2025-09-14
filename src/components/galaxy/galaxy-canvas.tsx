@@ -36,14 +36,18 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
   const controlsRef = useRef<OrbitControls | null>(null);
   const galaxyRef = useRef<THREE.Group | null>(null);
   const blackHoleRef = useRef<THREE.Group | null>(null);
+  const shipRef = useRef<THREE.Group | null>(null);
+
 
   const generateGalaxy = useCallback((parameters: GalaxyParameters) => {
     if (!sceneRef.current) return;
   
     // Dispose of old galaxy if it exists
     if (galaxyRef.current) {
-        sceneRef.current.remove(galaxyRef.current);
-        galaxyRef.current.traverse((object) => {
+        const oldGalaxy = galaxyRef.current;
+        galaxyRef.current = null;
+        sceneRef.current.remove(oldGalaxy);
+        oldGalaxy.traverse((object) => {
             if (object instanceof THREE.Points) {
                 object.geometry.dispose();
                 if (Array.isArray(object.material)) {
@@ -56,8 +60,9 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
     }
     
     // Create a new group for the galaxy
-    galaxyRef.current = new THREE.Group();
-    sceneRef.current.add(galaxyRef.current);
+    const newGalaxy = new THREE.Group();
+    sceneRef.current.add(newGalaxy);
+    galaxyRef.current = newGalaxy;
     
     const insideColor = new THREE.Color();
     insideColor.setHSL(Math.random(), 0.8, 0.6);
@@ -105,7 +110,7 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
     });
 
     const points = new THREE.Points(geometry, material);
-    galaxyRef.current.add(points);
+    newGalaxy.add(points);
   }, []);
 
   useImperativeHandle(ref, () => ({
@@ -157,13 +162,13 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
     blackHoleRef.current = blackHoleGroup;
 
     // Event Horizon
-    const blackHoleGeometry = new THREE.SphereGeometry(0.5, 64, 64);
+    const blackHoleGeometry = new THREE.SphereGeometry(1, 64, 64);
     const blackHoleMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
     const blackHoleMesh = new THREE.Mesh(blackHoleGeometry, blackHoleMaterial);
     blackHoleGroup.add(blackHoleMesh);
 
     // Accretion Disk
-    const diskGeometry = new THREE.RingGeometry(0.6, 1.6, 128);
+    const diskGeometry = new THREE.RingGeometry(1.2, 2.2, 128);
     const diskMaterial = new THREE.ShaderMaterial({
         side: THREE.DoubleSide,
         blending: THREE.AdditiveBlending,
@@ -211,7 +216,46 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
     const diskMesh = new THREE.Mesh(diskGeometry, diskMaterial);
     diskMesh.rotation.x = -Math.PI / 2;
     blackHoleGroup.add(diskMesh);
+    
+    // Spaceship
+    const ship = new THREE.Group();
+    const shipMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8, roughness: 0.4 });
+    
+    // Body
+    const bodyGeometry = new THREE.ConeGeometry(0.1, 0.5, 32);
+    const body = new THREE.Mesh(bodyGeometry, shipMaterial);
+    body.rotation.x = Math.PI / 2;
+    ship.add(body);
 
+    // Cockpit
+    const cockpitGeometry = new THREE.SphereGeometry(0.08, 32, 32);
+    const cockpitMaterial = new THREE.MeshStandardMaterial({ color: 0x00aaff, emissive: 0x00aaff, emissiveIntensity: 0.5 });
+    const cockpit = new THREE.Mesh(cockpitGeometry, cockpitMaterial);
+    cockpit.position.y = 0.15;
+    ship.add(cockpit);
+
+    // Engine
+    const engineGeometry = new THREE.CylinderGeometry(0.07, 0.05, 0.1, 32);
+    const engine = new THREE.Mesh(engineGeometry, shipMaterial);
+    engine.position.y = -0.2;
+    engine.rotation.x = Math.PI / 2;
+    ship.add(engine);
+
+    // Engine light
+    const engineLight = new THREE.PointLight(0x00ffff, 2, 1);
+    engineLight.position.y = -0.3;
+    ship.add(engineLight);
+
+    ship.position.set(2, 0.5, 4);
+    ship.rotation.y = -Math.PI / 4;
+    ship.rotation.x = -Math.PI / 12;
+
+    scene.add(ship);
+    shipRef.current = ship;
+
+    // Ambient Light
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
+    scene.add(ambientLight);
 
     generateGalaxy(initialParams);
 
@@ -222,6 +266,12 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
 
       // Animate accretion disk
       diskMaterial.uniforms.time.value = elapsedTime;
+
+      // Animate ship
+      if (shipRef.current) {
+        shipRef.current.position.y = 0.5 + Math.sin(elapsedTime * 0.7) * 0.1;
+      }
+
 
       animationFrameId = requestAnimationFrame(animate);
       controls.update();
@@ -271,6 +321,22 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
             }
         });
       }
+      if (shipRef.current) {
+        sceneRef.current?.remove(shipRef.current);
+        shipRef.current.traverse((object) => {
+            if (object instanceof THREE.Mesh) {
+                object.geometry.dispose();
+                const material = object.material as THREE.Material | THREE.Material[];
+                if (Array.isArray(material)) {
+                    material.forEach(m => m.dispose());
+                } else {
+                    material.dispose();
+                }
+            } else if (object instanceof THREE.PointLight) {
+                object.dispose();
+            }
+        });
+      }
       
       renderer.dispose();
       if (currentMount && renderer.domElement) {
@@ -288,3 +354,5 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
 
 GalaxyCanvas.displayName = "GalaxyCanvas";
 export default GalaxyCanvas;
+
+    
