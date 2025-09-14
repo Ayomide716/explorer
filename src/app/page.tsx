@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import GalaxyCanvas, { type GalaxyCanvasHandle, type GalaxyParameters } from '@/components/galaxy/galaxy-canvas';
 import GalaxyControls from '@/components/galaxy/galaxy-controls';
 import { Music } from 'lucide-react';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 export default function Home() {
   const galaxyRef = useRef<GalaxyCanvasHandle>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   
   const [galaxyParams, setGalaxyParams] = useState<GalaxyParameters>({
     count: 150000,
@@ -19,6 +19,15 @@ export default function Home() {
     randomness: 0.5,
     randomnessPower: 4,
   });
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.play().catch(() => {
+        // Autoplay was prevented, user will need to click the button.
+        setIsPlaying(false);
+      });
+    }
+  }, []);
 
   const handleGenerate = (params: GalaxyParameters) => {
     galaxyRef.current?.regenerate(params);
@@ -45,7 +54,7 @@ export default function Home() {
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-background">
-      <audio ref={audioRef} src="/ambient-soundscapes-007-space-atmosphere-304974.mp3" loop />
+      <audio ref={audioRef} src="/ambient-soundscapes-007-space-atmosphere-304974.mp3" loop autoPlay />
       <GalaxyCanvas ref={galaxyRef} initialParams={galaxyParams} />
       <GalaxyControls 
         onGenerate={handleGenerate} 
