@@ -25,12 +25,17 @@ export default function Home() {
     galaxyRef.current?.setCameraPosition(preset);
   };
 
+  const handleWarp = () => {
+    galaxyRef.current?.triggerWarp();
+  };
+
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-background">
       <GalaxyCanvas ref={galaxyRef} initialParams={galaxyParams} />
       <GalaxyControls 
         onGenerate={handleGenerate} 
         onSetView={handleSetView}
+        onWarp={handleWarp}
         initialParams={galaxyParams}
       />
       <div className="absolute bottom-4 left-4 z-10 text-xs text-muted-foreground font-headline">

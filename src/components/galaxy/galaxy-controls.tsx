@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import { Camera, RefreshCw, PanelRightOpen, PanelRightClose } from 'lucide-react';
+import { Camera, RefreshCw, PanelRightOpen, PanelRightClose, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -12,10 +12,11 @@ import type { GalaxyParameters } from './galaxy-canvas';
 type GalaxyControlsProps = {
   onGenerate: (params: GalaxyParameters) => void;
   onSetView: (preset: 'top' | 'side') => void;
+  onWarp: () => void;
   initialParams: GalaxyParameters;
 };
 
-export default function GalaxyControls({ onGenerate, onSetView, initialParams }: GalaxyControlsProps) {
+export default function GalaxyControls({ onGenerate, onSetView, onWarp, initialParams }: GalaxyControlsProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [params, setParams] = useState<GalaxyParameters>(initialParams);
 
@@ -37,6 +38,10 @@ export default function GalaxyControls({ onGenerate, onSetView, initialParams }:
 
   const handleGenerateClick = () => {
     onGenerate(params);
+  };
+
+  const handleWarpClick = () => {
+    onWarp();
   };
   
   useEffect(() => {
@@ -104,6 +109,11 @@ export default function GalaxyControls({ onGenerate, onSetView, initialParams }:
                 <Button variant="outline" className={buttonStyle} onClick={handleGenerateClick}>
                   <RefreshCw className={iconStyle} />
                   Regenerate with new Colors
+                </Button>
+                
+                <Button variant="default" className="w-full justify-center text-center font-bold" onClick={handleWarpClick}>
+                  <Sparkles className="mr-2 h-5 w-5" />
+                  Warp Jump
                 </Button>
 
                 <div className="flex flex-col gap-2">

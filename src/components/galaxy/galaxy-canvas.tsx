@@ -6,6 +6,7 @@ import {
   useImperativeHandle,
   forwardRef,
   useCallback,
+  useState,
 } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -22,6 +23,7 @@ export interface GalaxyParameters {
 export interface GalaxyCanvasHandle {
   regenerate: (params: GalaxyParameters) => void;
   setCameraPosition: (preset: 'top' | 'side') => void;
+  triggerWarp: () => void;
 }
 
 type GalaxyCanvasProps = {
@@ -37,14 +39,14 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
   const galaxyRef = useRef<THREE.Group | null>(null);
   const blackHoleRef = useRef<THREE.Group | null>(null);
 
+  const [isWarping, setIsWarping] = useState(false);
+  const warpStartTimeRef = useRef(0);
 
   const generateGalaxy = useCallback((parameters: GalaxyParameters) => {
     if (!sceneRef.current) return;
   
-    // Dispose of old galaxy if it exists
     if (galaxyRef.current) {
         const oldGalaxy = galaxyRef.current;
-        galaxyRef.current = null;
         sceneRef.current.remove(oldGalaxy);
         oldGalaxy.traverse((object) => {
             if (object instanceof THREE.Points) {
@@ -56,9 +58,9 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
                 }
             }
         });
+        galaxyRef.current = null;
     }
     
-    // Create a new group for the galaxy
     const newGalaxy = new THREE.Group();
     sceneRef.current.add(newGalaxy);
     galaxyRef.current = newGalaxy;
@@ -128,6 +130,12 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
         controlsRef.current.update();
       }
     },
+    triggerWarp: () => {
+        if (isWarping || !controlsRef.current) return;
+        setIsWarping(true);
+        warpStartTimeRef.current = performance.now();
+        controlsRef.current.autoRotate = false;
+    }
   }));
 
   useEffect(() => {
@@ -155,19 +163,16 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
     controls.autoRotateSpeed = 0.2;
     controlsRef.current = controls;
 
-    // Black hole
     const blackHoleGroup = new THREE.Group();
     scene.add(blackHoleGroup);
     blackHoleRef.current = blackHoleGroup;
 
-    // Event Horizon
     const blackHoleGeometry = new THREE.SphereGeometry(1.5, 64, 64);
     const blackHoleMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
     const blackHoleMesh = new THREE.Mesh(blackHoleGeometry, blackHoleMaterial);
     blackHoleGroup.add(blackHoleMesh);
 
-    // Accretion Disk
-    const diskGeometry = new THREE.RingGeometry(1.7, 3, 128);
+    const diskGeometry = new THREE.RingGeometry(1.7, 3.5, 128);
     const diskMaterial = new THREE.ShaderMaterial({
         side: THREE.DoubleSide,
         blending: THREE.AdditiveBlending,
@@ -216,7 +221,6 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
     diskMesh.rotation.x = -Math.PI / 2;
     blackHoleGroup.add(diskMesh);
     
-    // Ambient Light
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
     scene.add(ambientLight);
 
@@ -227,8 +231,34 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
     const animate = () => {
       const elapsedTime = clock.getElapsedTime();
 
-      // Animate accretion disk
       diskMaterial.uniforms.time.value = elapsedTime;
+
+      if (isWarping && galaxyRef.current && cameraRef.current && controlsRef.current) {
+        const warpDuration = 1500; // 1.5 seconds
+        const warpProgress = (performance.now() - warpStartTimeRef.current) / warpDuration;
+
+        if (warpProgress < 1) {
+          const easeProgress = 1.0 - Math.pow(1.0 - warpProgress, 4.0);
+          galaxyRef.current.scale.z = 1.0 + easeProgress * 25.0;
+          cameraRef.current.fov = 75 + easeProgress * 50;
+          cameraRef.current.updateProjectionMatrix();
+        } else {
+            // End of warp: reset and generate new galaxy
+            galaxyRef.current.scale.z = 1.0;
+            cameraRef.current.fov = 75;
+            cameraRef.current.updateProjectionMatrix();
+            setIsWarping(false);
+            controlsRef.current.autoRotate = true;
+            generateGalaxy({
+                count: Math.floor(10000 + Math.random() * 190000),
+                radius: 4 + Math.random() * 6,
+                branches: Math.floor(3 + Math.random() * 17),
+                spin: Math.random() * 4 - 2,
+                randomness: Math.random() * 2,
+                randomnessPower: 1 + Math.random() * 9,
+            });
+        }
+      }
 
       animationFrameId = requestAnimationFrame(animate);
       controls.update();
@@ -288,12 +318,10 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
         }
       }
     };
-  }, [generateGalaxy, initialParams]);
+  }, [generateGalaxy, initialParams, isWarping]);
 
   return <div ref={mountRef} className="absolute inset-0 z-0" />;
 });
 
 GalaxyCanvas.displayName = "GalaxyCanvas";
 export default GalaxyCanvas;
-
-    
