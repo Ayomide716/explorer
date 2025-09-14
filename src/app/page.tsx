@@ -11,7 +11,7 @@ const popUpData: Record<string, InfoPopupData> = {
   'black-hole': {
     title: 'Supermassive Black Hole',
     description: "At the center of most large galaxies, including our own Milky Way, lies a supermassive black hole. These cosmic giants can have masses millions or even billions of times that of our sun. They have an incredibly strong gravitational pull from which nothing, not even light, can escape.",
-    imageUrl: 'https://images.unsplash.com/photo-1614726365902-18152349cf17?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+    imageUrl: 'https://picsum.photos/seed/blackhole/600/400',
     imageHint: 'black hole',
   }
 };
