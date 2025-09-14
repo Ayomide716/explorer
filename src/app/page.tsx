@@ -45,7 +45,7 @@ export default function Home() {
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-background">
-      <audio ref={audioRef} src="/ambient-soundscapes-007-space-atmosphere-304974.mp3" loop />
+      <audio ref={audioRef} src="/home/user/studio/src/ambient-soundscapes-007-space-atmosphere-304974.mp3" loop />
       <GalaxyCanvas ref={galaxyRef} initialParams={galaxyParams} />
       <GalaxyControls 
         onGenerate={handleGenerate} 
