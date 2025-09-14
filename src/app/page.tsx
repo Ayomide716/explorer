@@ -45,7 +45,7 @@ export default function Home() {
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-background">
-      <audio ref={audioRef} src="https://storage.googleapis.com/coframe-samples/interstellar.mp3" loop />
+      <audio ref={audioRef} src="https://firebasestorage.googleapis.com/v0/b/genkit-llm-7a542.appspot.com/o/interstellar.mp3?alt=media" loop />
       <GalaxyCanvas ref={galaxyRef} initialParams={galaxyParams} />
       <GalaxyControls 
         onGenerate={handleGenerate} 
