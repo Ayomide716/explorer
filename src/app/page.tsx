@@ -21,7 +21,6 @@ export default function Home() {
   });
 
   const handleGenerate = (params: GalaxyParameters) => {
-    setGalaxyParams(params);
     galaxyRef.current?.regenerate(params);
   };
 
@@ -66,3 +65,5 @@ export default function Home() {
     </main>
   );
 }
+
+    

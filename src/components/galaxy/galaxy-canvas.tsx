@@ -41,6 +41,7 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
 
   const [isWarping, setIsWarping] = useState(false);
   const warpStartTimeRef = useRef(0);
+  const [currentParams, setCurrentParams] = useState(initialParams);
 
   const generateGalaxy = useCallback((parameters: GalaxyParameters) => {
     if (!sceneRef.current) return;
@@ -116,6 +117,7 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
 
   useImperativeHandle(ref, () => ({
     regenerate: (params: GalaxyParameters) => {
+      setCurrentParams(params);
       generateGalaxy(params);
     },
     setCameraPosition: (preset: 'top' | 'side') => {
@@ -224,7 +226,7 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
     scene.add(ambientLight);
 
-    generateGalaxy(initialParams);
+    generateGalaxy(currentParams);
 
     const clock = new THREE.Clock();
     let animationFrameId: number;
@@ -249,14 +251,16 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
             cameraRef.current.updateProjectionMatrix();
             setIsWarping(false);
             controlsRef.current.autoRotate = true;
-            generateGalaxy({
+            const newParams = {
                 count: Math.floor(10000 + Math.random() * 190000),
                 radius: 4 + Math.random() * 6,
                 branches: Math.floor(3 + Math.random() * 17),
                 spin: Math.random() * 4 - 2,
                 randomness: Math.random() * 2,
                 randomnessPower: 1 + Math.random() * 9,
-            });
+            };
+            setCurrentParams(newParams)
+            generateGalaxy(newParams);
         }
       }
 
@@ -318,10 +322,17 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
         }
       }
     };
-  }, [generateGalaxy, initialParams, isWarping]);
+  }, [generateGalaxy, isWarping]);
+
+  useEffect(() => {
+    generateGalaxy(currentParams);
+  }, [currentParams, generateGalaxy]);
+
 
   return <div ref={mountRef} className="absolute inset-0 z-0" />;
 });
 
 GalaxyCanvas.displayName = "GalaxyCanvas";
 export default GalaxyCanvas;
+
+    
