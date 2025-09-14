@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Camera, RefreshCw, PanelRightOpen, PanelRightClose } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,14 +19,6 @@ export default function GalaxyControls({ onGenerate, onSetView, initialParams }:
   const [isOpen, setIsOpen] = useState(true);
   const [params, setParams] = useState<GalaxyParameters>(initialParams);
 
-  const handleSliderChange = (key: keyof GalaxyParameters) => (value: number[]) => {
-    setParams(prev => ({ ...prev, [key]: value[0] }));
-  };
-
-  const handleGenerateClick = () => {
-    onGenerate(params);
-  };
-  
   const debouncedOnGenerate = useMemo(() => {
     let timeoutId: NodeJS.Timeout;
     return (newParams: GalaxyParameters) => {
@@ -37,11 +29,27 @@ export default function GalaxyControls({ onGenerate, onSetView, initialParams }:
     };
   }, [onGenerate]);
 
-  const handleSliderCommit = (key: keyof GalaxyParameters) => (value: number[]) => {
+  const handleSliderChange = (key: keyof GalaxyParameters) => (value: number[]) => {
     const newParams = { ...params, [key]: value[0] };
     setParams(newParams);
     debouncedOnGenerate(newParams);
   };
+
+  const handleGenerateClick = () => {
+    onGenerate(params);
+  };
+  
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'b') {
+        setIsOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
 
   const buttonStyle = "w-full justify-start text-left bg-muted hover:bg-muted/80 border-border text-foreground";
@@ -69,27 +77,27 @@ export default function GalaxyControls({ onGenerate, onSetView, initialParams }:
                 <div className="flex flex-col gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="count" className="text-sm font-medium text-muted-foreground ml-1">Stars: {params.count.toLocaleString()}</Label>
-                    <Slider id="count" min={1000} max={200000} step={1000} value={[params.count]} onValueChange={handleSliderChange('count')} onValueCommit={handleSliderCommit('count')} />
+                    <Slider id="count" min={1000} max={200000} step={1000} value={[params.count]} onValueChange={handleSliderChange('count')} />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="radius" className="text-sm font-medium text-muted-foreground ml-1">Radius: {params.radius.toFixed(1)}</Label>
-                    <Slider id="radius" min={1} max={10} step={0.1} value={[params.radius]} onValueChange={handleSliderChange('radius')} onValueCommit={handleSliderCommit('radius')} />
+                    <Slider id="radius" min={1} max={10} step={0.1} value={[params.radius]} onValueChange={handleSliderChange('radius')} />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="branches" className="text-sm font-medium text-muted-foreground ml-1">Arms: {params.branches}</Label>
-                    <Slider id="branches" min={2} max={20} step={1} value={[params.branches]} onValueChange={handleSliderChange('branches')} onValueCommit={handleSliderCommit('branches')} />
+                    <Slider id="branches" min={2} max={20} step={1} value={[params.branches]} onValueChange={handleSliderChange('branches')} />
                   </div>
                   <div className="grid gap-2">
                      <Label htmlFor="spin" className="text-sm font-medium text-muted-foreground ml-1">Spin: {params.spin.toFixed(2)}</Label>
-                    <Slider id="spin" min={-2} max={2} step={0.01} value={[params.spin]} onValueChange={handleSliderChange('spin')} onValueCommit={handleSliderCommit('spin')} />
+                    <Slider id="spin" min={-2} max={2} step={0.01} value={[params.spin]} onValueChange={handleSliderChange('spin')} />
                   </div>
                    <div className="grid gap-2">
                      <Label htmlFor="randomness" className="text-sm font-medium text-muted-foreground ml-1">Randomness: {params.randomness.toFixed(2)}</Label>
-                    <Slider id="randomness" min={0} max={2} step={0.01} value={[params.randomness]} onValueChange={handleSliderChange('randomness')} onValueCommit={handleSliderCommit('randomness')} />
+                    <Slider id="randomness" min={0} max={2} step={0.01} value={[params.randomness]} onValueChange={handleSliderChange('randomness')} />
                   </div>
                    <div className="grid gap-2">
                      <Label htmlFor="randomnessPower" className="text-sm font-medium text-muted-foreground ml-1">Random Power: {params.randomnessPower.toFixed(2)}</Label>
-                    <Slider id="randomnessPower" min={1} max={10} step={0.1} value={[params.randomnessPower]} onValueChange={handleSliderChange('randomnessPower')} onValueCommit={handleSliderCommit('randomnessPower')} />
+                    <Slider id="randomnessPower" min={1} max={10} step={0.1} value={[params.randomnessPower]} onValueChange={handleSliderChange('randomnessPower')} />
                   </div>
                 </div>
 
