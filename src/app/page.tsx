@@ -45,7 +45,7 @@ export default function Home() {
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-background">
-      <audio ref={audioRef} src="https://studio.coframe.ai/storage/media/klB3BeJz0Cah2eBCajYc/Interstellar.mp3" loop />
+      <audio ref={audioRef} src="https://storage.googleapis.com/coframe-samples/interstellar.mp3" loop />
       <GalaxyCanvas ref={galaxyRef} initialParams={galaxyParams} />
       <GalaxyControls 
         onGenerate={handleGenerate} 
@@ -65,5 +65,3 @@ export default function Home() {
     </main>
   );
 }
-
-    
