@@ -83,13 +83,16 @@ export default function Home() {
         onWarp={handleWarp}
         initialParams={galaxyParams}
       />
-      <div className="absolute bottom-4 left-4 z-10 flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={toggleMusic} className="text-muted-foreground hover:text-foreground">
-          <Music className={`h-6 w-6 ${isPlaying ? 'text-accent drop-shadow-[0_0_5px_hsl(var(--accent))]' : ''}`} />
-        </Button>
-        <div className="text-xs text-muted-foreground font-headline">
-            <p>Cosmic Explorer</p>
-            <p className="hidden md:block">Click objects to learn more. Use your mouse to explore. Press 'B' to toggle controls.</p>
+      <div className="absolute bottom-0 left-0 z-10 p-4">
+        <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={toggleMusic} className="text-muted-foreground hover:text-foreground">
+              <Music className={`h-6 w-6 ${isPlaying ? 'text-accent drop-shadow-[0_0_5px_hsl(var(--accent))]' : ''}`} />
+            </Button>
+            <div className="text-xs text-muted-foreground font-headline">
+                <p>Cosmic Explorer</p>
+                <p className="hidden sm:block">Click objects to learn more. Use your mouse to explore.</p>
+                <p className="hidden md:block">Press 'B' to toggle controls.</p>
+            </div>
         </div>
       </div>
       <InfoPopup
