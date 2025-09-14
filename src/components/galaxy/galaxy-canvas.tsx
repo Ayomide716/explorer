@@ -38,15 +38,14 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
 
   const generateGalaxy = useCallback((parameters: GalaxyParameters) => {
     if (!sceneRef.current) return;
-
+  
     if (galaxyRef.current) {
-      while(galaxyRef.current.children.length > 0){ 
-        const object = galaxyRef.current.children[0];
-        if (object instanceof THREE.Points) {
-            object.geometry.dispose();
-            (object.material as THREE.Material).dispose();
-        }
-        galaxyRef.current.remove(object); 
+      // Dispose old galaxy
+      const oldPoints = galaxyRef.current.children[0] as THREE.Points | undefined;
+      if (oldPoints) {
+        oldPoints.geometry.dispose();
+        (oldPoints.material as THREE.Material).dispose();
+        galaxyRef.current.remove(oldPoints);
       }
     } else {
       galaxyRef.current = new THREE.Group();
@@ -127,7 +126,7 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
     const scene = new THREE.Scene();
     sceneRef.current = scene;
     
-    const camera = new THREE.PerspectiveCamera(75, currentMount.clientWidth / currentMount.clientHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(75, currentMount.clientWidth / currentMount.clientHeight, 0.1, 100);
     camera.position.z = 8;
     camera.position.y = 3;
     cameraRef.current = camera;
