@@ -28,9 +28,10 @@ export interface GalaxyCanvasHandle {
 
 type GalaxyCanvasProps = {
   initialParams: GalaxyParameters;
+  onObjectClick: (objectType: string) => void;
 }
 
-const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initialParams }, ref) => {
+const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initialParams, onObjectClick }, ref) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -39,6 +40,8 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
   const galaxyRef = useRef<THREE.Group | null>(null);
   const blackHoleRef = useRef<THREE.Group | null>(null);
   const asteroidBeltsRef = useRef<THREE.Group[]>([]);
+  const raycasterRef = useRef<THREE.Raycaster | null>(null);
+  const mouseRef = useRef<THREE.Vector2 | null>(null);
 
   const [isWarping, setIsWarping] = useState(false);
   const warpStartTimeRef = useRef(0);
@@ -163,8 +166,8 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
 
     const points = new THREE.Points(geometry, material);
     newGalaxy.add(points);
-    generateAsteroidBelt(sceneRef.current, parameters.radius + 1.0, 300, 0.005, 0);
-    generateAsteroidBelt(sceneRef.current, parameters.radius + 2.5, 400, 0.003, 1);
+    generateAsteroidBelt(sceneRef.current, parameters.radius * 1.2, 300, 0.0005, 0);
+    generateAsteroidBelt(sceneRef.current, parameters.radius * 1.5, 400, 0.0003, 1);
   }, [generateAsteroidBelt]);
 
 
@@ -200,6 +203,9 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
     const scene = new THREE.Scene();
     sceneRef.current = scene;
     
+    raycasterRef.current = new THREE.Raycaster();
+    mouseRef.current = new THREE.Vector2();
+
     const camera = new THREE.PerspectiveCamera(75, currentMount.clientWidth / currentMount.clientHeight, 0.1, 100);
     camera.position.z = 8;
     camera.position.y = 3;
@@ -219,12 +225,14 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
     controlsRef.current = controls;
 
     const blackHoleGroup = new THREE.Group();
+    blackHoleGroup.name = 'black-hole';
     scene.add(blackHoleGroup);
     blackHoleRef.current = blackHoleGroup;
 
     const blackHoleGeometry = new THREE.SphereGeometry(1.5, 64, 64);
     const blackHoleMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
     const blackHoleMesh = new THREE.Mesh(blackHoleGeometry, blackHoleMaterial);
+    blackHoleMesh.name = 'black-hole'; // For raycasting
     blackHoleGroup.add(blackHoleMesh);
 
     const diskGeometry = new THREE.RingGeometry(1.7, 3.5, 128);
@@ -339,9 +347,33 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     };
     window.addEventListener('resize', handleResize);
+    
+    const handleClick = (event: MouseEvent) => {
+        if (!raycasterRef.current || !mouseRef.current || !cameraRef.current || !sceneRef.current) return;
+
+        mouseRef.current.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouseRef.current.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+        raycasterRef.current.setFromCamera(mouseRef.current, cameraRef.current);
+        const intersects = raycasterRef.current.intersectObjects(sceneRef.current.children, true);
+        
+        for (const intersect of intersects) {
+            let currentObject = intersect.object;
+            while(currentObject) {
+                if (currentObject.name === 'black-hole') {
+                    onObjectClick('black-hole');
+                    return;
+                }
+                currentObject = currentObject.parent as THREE.Object3D;
+            }
+        }
+    };
+    window.addEventListener('click', handleClick);
+
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('click', handleClick);
       cancelAnimationFrame(animationFrameId);
       controls.dispose();
       
@@ -374,7 +406,7 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
         }
       }
     };
-  }, [generateGalaxy, isWarping]);
+  }, [generateGalaxy, isWarping, onObjectClick]);
 
   useEffect(() => {
     generateGalaxy(currentParams);
@@ -386,5 +418,3 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
 
 GalaxyCanvas.displayName = "GalaxyCanvas";
 export default GalaxyCanvas;
-
-    
