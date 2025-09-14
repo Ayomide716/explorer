@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type RefObject } from 'react';
+import { useRef, useState } from 'react';
 import GalaxyCanvas, { type GalaxyCanvasHandle, type GalaxyParameters } from '@/components/galaxy/galaxy-canvas';
 import GalaxyControls from '@/components/galaxy/galaxy-controls';
 import { Music } from 'lucide-react';
