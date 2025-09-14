@@ -23,7 +23,6 @@ export default function Home() {
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.play().catch(() => {
-        // Autoplay was prevented, user will need to click the button.
         setIsPlaying(false);
       });
     }
@@ -62,11 +61,11 @@ export default function Home() {
         onWarp={handleWarp}
         initialParams={galaxyParams}
       />
-      <div className="absolute bottom-4 left-4 z-10 text-xs text-muted-foreground font-headline">
-        <p>Cosmic Explorer</p>
-        <p className="hidden md:block">Use your mouse to explore. Press 'B' to toggle controls.</p>
-      </div>
-      <div className="absolute bottom-4 right-4 z-10">
+      <div className="absolute bottom-4 left-4 z-10 flex items-center gap-4">
+        <div className="text-xs text-muted-foreground font-headline">
+            <p>Cosmic Explorer</p>
+            <p className="hidden md:block">Use your mouse to explore. Press 'B' to toggle controls.</p>
+        </div>
         <Button variant="ghost" size="icon" onClick={toggleMusic} className="text-muted-foreground hover:text-foreground">
           <Music className={`h-6 w-6 ${isPlaying ? 'text-accent drop-shadow-[0_0_5px_hsl(var(--accent))]' : ''}`} />
         </Button>
