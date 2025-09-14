@@ -14,7 +14,7 @@ type GalaxyControlsProps = {
 export default function GalaxyControls({ onGenerate, onSetView }: GalaxyControlsProps) {
   const [isOpen, setIsOpen] = useState(true);
 
-  const buttonStyle = "w-full justify-start text-left bg-primary/50 hover:bg-primary/80 border-primary text-primary-foreground";
+  const buttonStyle = "w-full justify-start text-left bg-muted hover:bg-muted/80 border-border text-foreground";
   const iconStyle = "mr-2 h-5 w-5 drop-shadow-[0_0_5px_hsl(var(--accent))] text-accent";
 
   return (
@@ -27,7 +27,7 @@ export default function GalaxyControls({ onGenerate, onSetView }: GalaxyControls
             exit={{ opacity: 0, x: 100 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            <Card className="w-64 bg-background/50 backdrop-blur-sm border-primary/50 shadow-2xl shadow-primary/20">
+            <Card className="w-64 bg-background/50 backdrop-blur-sm border-border shadow-2xl shadow-primary/20">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="font-headline text-2xl text-accent">Controls</CardTitle>
                 <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="h-8 w-8 text-muted-foreground hover:text-foreground">
@@ -59,7 +59,7 @@ export default function GalaxyControls({ onGenerate, onSetView }: GalaxyControls
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-             <Button variant="outline" size="icon" onClick={() => setIsOpen(true)} className="bg-background/50 backdrop-blur-sm border-primary/50 h-12 w-12 rounded-full shadow-2xl shadow-primary/20">
+             <Button variant="outline" size="icon" onClick={() => setIsOpen(true)} className="bg-background/50 backdrop-blur-sm border-border h-12 w-12 rounded-full shadow-2xl shadow-primary/20">
                 <PanelRightOpen className="h-6 w-6 text-accent drop-shadow-[0_0_5px_hsl(var(--accent))]"/>
             </Button>
           </motion.div>
