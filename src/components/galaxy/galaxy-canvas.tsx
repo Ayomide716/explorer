@@ -35,13 +35,14 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const galaxyRef = useRef<THREE.Group | null>(null);
+  const blackHoleRef = useRef<THREE.Group | null>(null);
 
   const generateGalaxy = useCallback((parameters: GalaxyParameters) => {
     if (!sceneRef.current) return;
   
     // Dispose of old galaxy if it exists
     if (galaxyRef.current) {
-        // Traverse the group and dispose of materials and geometries
+        sceneRef.current.remove(galaxyRef.current);
         galaxyRef.current.traverse((object) => {
             if (object instanceof THREE.Points) {
                 object.geometry.dispose();
@@ -52,7 +53,6 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
                 }
             }
         });
-        sceneRef.current.remove(galaxyRef.current);
     }
     
     // Create a new group for the galaxy
@@ -151,10 +151,78 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
     controls.autoRotateSpeed = 0.2;
     controlsRef.current = controls;
 
+    // Black hole
+    const blackHoleGroup = new THREE.Group();
+    scene.add(blackHoleGroup);
+    blackHoleRef.current = blackHoleGroup;
+
+    // Event Horizon
+    const blackHoleGeometry = new THREE.SphereGeometry(0.25, 32, 32);
+    const blackHoleMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+    const blackHoleMesh = new THREE.Mesh(blackHoleGeometry, blackHoleMaterial);
+    blackHoleGroup.add(blackHoleMesh);
+
+    // Accretion Disk
+    const diskGeometry = new THREE.RingGeometry(0.3, 0.8, 64);
+    const diskMaterial = new THREE.ShaderMaterial({
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+        depthWrite: false,
+        uniforms: {
+            time: { value: 0 },
+            color1: { value: new THREE.Color(0xff8800) },
+            color2: { value: new THREE.Color(0xff0000) },
+        },
+        vertexShader: `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `,
+        fragmentShader: `
+            uniform float time;
+            uniform vec3 color1;
+            uniform vec3 color2;
+            varying vec2 vUv;
+            
+            float noise(vec2 p) {
+                return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+            }
+
+            void main() {
+                float angle = atan(vUv.y - 0.5, vUv.x - 0.5) + time * 0.5;
+                float radius = length(vUv - 0.5);
+                
+                float strength = (0.5 - abs(radius - 0.7)) * 2.0;
+                strength = smoothstep(0.0, 1.0, strength);
+
+                float colorMix = 0.5 + 0.5 * sin(angle * 5.0 + time * 2.0);
+                vec3 color = mix(color1, color2, colorMix);
+
+                float n = noise(vUv * 10.0 + time * 0.2);
+                strength *= n * 0.5 + 0.5;
+                
+                gl_FragColor = vec4(color, strength * (1.0 - smoothstep(0.9, 1.0, radius)));
+            }
+        `
+    });
+    const diskMesh = new THREE.Mesh(diskGeometry, diskMaterial);
+    diskMesh.rotation.x = -Math.PI / 2;
+    blackHoleGroup.add(diskMesh);
+
+
     generateGalaxy(initialParams);
 
+    const clock = new THREE.Clock();
     let animationFrameId: number;
     const animate = () => {
+      const elapsedTime = clock.getElapsedTime();
+
+      // Animate accretion disk
+      diskMaterial.uniforms.time.value = elapsedTime;
+
       animationFrameId = requestAnimationFrame(animate);
       controls.update();
       renderer.render(scene, camera);
@@ -175,15 +243,32 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
       controls.dispose();
       
       if (galaxyRef.current) {
+        sceneRef.current?.remove(galaxyRef.current);
         galaxyRef.current.traverse((object) => {
              if (object instanceof THREE.Points) {
                  object.geometry.dispose();
-                 if (Array.isArray(object.material)) {
-                     object.material.forEach(material => material.dispose());
+                 const material = object.material as THREE.Material | THREE.Material[];
+                 if (Array.isArray(material)) {
+                     material.forEach(m => m.dispose());
                  } else {
-                     object.material.dispose();
+                     material.dispose();
                  }
              }
+        });
+      }
+
+      if (blackHoleRef.current) {
+        sceneRef.current?.remove(blackHoleRef.current);
+        blackHoleRef.current.traverse((object) => {
+            if (object instanceof THREE.Mesh) {
+                object.geometry.dispose();
+                const material = object.material as THREE.Material | THREE.Material[];
+                if (Array.isArray(material)) {
+                    material.forEach(m => m.dispose());
+                } else {
+                    material.dispose();
+                }
+            }
         });
       }
       
