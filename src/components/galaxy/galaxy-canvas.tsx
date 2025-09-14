@@ -38,6 +38,7 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
   const controlsRef = useRef<OrbitControls | null>(null);
   const galaxyRef = useRef<THREE.Group | null>(null);
   const blackHoleRef = useRef<THREE.Group | null>(null);
+  const asteroidBeltsRef = useRef<THREE.Group[]>([]);
 
   const [isWarping, setIsWarping] = useState(false);
   const warpStartTimeRef = useRef(0);
@@ -114,6 +115,41 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
     const points = new THREE.Points(geometry, material);
     newGalaxy.add(points);
   }, []);
+
+  const generateAsteroidBelt = useCallback((scene: THREE.Scene, radius: number, count: number, speed: number, beltIndex: number) => {
+    const belt = new THREE.Group();
+    belt.userData = { speed };
+    const asteroidGeometries: THREE.BufferGeometry[] = [];
+    const asteroidMaterial = new THREE.MeshStandardMaterial({
+        color: 0x888888,
+        roughness: 0.8,
+        metalness: 0.5
+    });
+
+    for(let i=0; i<30; i++) {
+        const geo = new THREE.IcosahedronGeometry(Math.random() * 0.05 + 0.02, 0);
+        asteroidGeometries.push(geo);
+    }
+    
+    for (let i = 0; i < count; i++) {
+        const geometryIndex = Math.floor(Math.random() * asteroidGeometries.length);
+        const asteroid = new THREE.Mesh(asteroidGeometries[geometryIndex], asteroidMaterial);
+
+        const angle = Math.random() * Math.PI * 2;
+        const r = radius + (Math.random() - 0.5) * 0.5;
+        const y = (Math.random() - 0.5) * 0.1;
+        
+        asteroid.position.set(Math.cos(angle) * r, y, Math.sin(angle) * r);
+        asteroid.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+        belt.add(asteroid);
+    }
+    
+    scene.add(belt);
+    asteroidBeltsRef.current[beltIndex] = belt;
+
+    // Dispose geometries after creating meshes to save memory
+    asteroidGeometries.forEach(geo => geo.dispose());
+}, []);
 
   useImperativeHandle(ref, () => ({
     regenerate: (params: GalaxyParameters) => {
@@ -223,10 +259,16 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
     diskMesh.rotation.x = -Math.PI / 2;
     blackHoleGroup.add(diskMesh);
     
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
     scene.add(ambientLight);
 
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    directionalLight.position.set(0, 0, 1);
+    scene.add(directionalLight);
+
     generateGalaxy(currentParams);
+    generateAsteroidBelt(scene, 4, 300, 0.05, 0);
+    generateAsteroidBelt(scene, 5.5, 400, 0.03, 1);
 
     const clock = new THREE.Clock();
     let animationFrameId: number;
@@ -234,6 +276,11 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
       const elapsedTime = clock.getElapsedTime();
 
       diskMaterial.uniforms.time.value = elapsedTime;
+      asteroidBeltsRef.current.forEach(belt => {
+        if (belt) {
+            belt.rotation.y += belt.userData.speed;
+        }
+      });
 
       if (isWarping && galaxyRef.current && cameraRef.current && controlsRef.current) {
         const warpDuration = 1500; // 1.5 seconds
@@ -283,35 +330,25 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
       cancelAnimationFrame(animationFrameId);
       controls.dispose();
       
-      if (galaxyRef.current) {
-        sceneRef.current?.remove(galaxyRef.current);
-        galaxyRef.current.traverse((object) => {
-             if (object instanceof THREE.Points) {
-                 object.geometry.dispose();
-                 const material = object.material as THREE.Material | THREE.Material[];
-                 if (Array.isArray(material)) {
-                     material.forEach(m => m.dispose());
-                 } else {
-                     material.dispose();
-                 }
-             }
-        });
-      }
-
-      if (blackHoleRef.current) {
-        sceneRef.current?.remove(blackHoleRef.current);
-        blackHoleRef.current.traverse((object) => {
-            if (object instanceof THREE.Mesh) {
-                object.geometry.dispose();
-                const material = object.material as THREE.Material | THREE.Material[];
-                if (Array.isArray(material)) {
-                    material.forEach(m => m.dispose());
-                } else {
-                    material.dispose();
-                }
-            }
-        });
-      }
+      const disposeGroup = (group: THREE.Group | null) => {
+          if (!group) return;
+          sceneRef.current?.remove(group);
+          group.traverse((object) => {
+              if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
+                  object.geometry.dispose();
+                  const material = object.material as THREE.Material | THREE.Material[];
+                  if (Array.isArray(material)) {
+                      material.forEach(m => m.dispose());
+                  } else {
+                      material.dispose();
+                  }
+              }
+          });
+      };
+      
+      disposeGroup(galaxyRef.current);
+      disposeGroup(blackHoleRef.current);
+      asteroidBeltsRef.current.forEach(belt => disposeGroup(belt));
       
       renderer.dispose();
       if (currentMount && renderer.domElement) {
@@ -322,7 +359,7 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
         }
       }
     };
-  }, [generateGalaxy, isWarping]);
+  }, [generateGalaxy, generateAsteroidBelt, isWarping]);
 
   useEffect(() => {
     generateGalaxy(currentParams);
