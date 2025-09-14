@@ -8,12 +8,12 @@ export default function Home() {
   const galaxyRef = useRef<GalaxyCanvasHandle>(null);
   
   const [galaxyParams, setGalaxyParams] = useState<GalaxyParameters>({
-    count: 100000,
-    radius: 5,
-    branches: 5,
+    count: 150000,
+    radius: 7,
+    branches: 10,
     spin: 0.5,
-    randomness: 0.2,
-    randomnessPower: 3,
+    randomness: 0.5,
+    randomnessPower: 4,
   });
 
   const handleGenerate = (params: GalaxyParameters) => {
