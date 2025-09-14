@@ -157,13 +157,13 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
     blackHoleRef.current = blackHoleGroup;
 
     // Event Horizon
-    const blackHoleGeometry = new THREE.SphereGeometry(0.25, 32, 32);
+    const blackHoleGeometry = new THREE.SphereGeometry(0.5, 64, 64);
     const blackHoleMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
     const blackHoleMesh = new THREE.Mesh(blackHoleGeometry, blackHoleMaterial);
     blackHoleGroup.add(blackHoleMesh);
 
     // Accretion Disk
-    const diskGeometry = new THREE.RingGeometry(0.3, 0.8, 64);
+    const diskGeometry = new THREE.RingGeometry(0.6, 1.6, 128);
     const diskMaterial = new THREE.ShaderMaterial({
         side: THREE.DoubleSide,
         blending: THREE.AdditiveBlending,
