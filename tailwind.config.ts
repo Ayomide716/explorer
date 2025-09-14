@@ -95,5 +95,5 @@ export default {
       },
     },
   },
-  plugins: [require('tailwindcss-animate'), require("framer-motion-plugin")],
+  plugins: [require('tailwindcss-animate')],
 } satisfies Config;
