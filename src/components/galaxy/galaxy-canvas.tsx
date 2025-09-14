@@ -39,18 +39,25 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
   const generateGalaxy = useCallback((parameters: GalaxyParameters) => {
     if (!sceneRef.current) return;
   
+    // Dispose of old galaxy if it exists
     if (galaxyRef.current) {
-      // Dispose old galaxy
-      const oldPoints = galaxyRef.current.children[0] as THREE.Points | undefined;
-      if (oldPoints) {
-        oldPoints.geometry.dispose();
-        (oldPoints.material as THREE.Material).dispose();
-        galaxyRef.current.remove(oldPoints);
-      }
-    } else {
-      galaxyRef.current = new THREE.Group();
-      sceneRef.current.add(galaxyRef.current);
+        // Traverse the group and dispose of materials and geometries
+        galaxyRef.current.traverse((object) => {
+            if (object instanceof THREE.Points) {
+                object.geometry.dispose();
+                if (Array.isArray(object.material)) {
+                    object.material.forEach(material => material.dispose());
+                } else {
+                    object.material.dispose();
+                }
+            }
+        });
+        sceneRef.current.remove(galaxyRef.current);
     }
+    
+    // Create a new group for the galaxy
+    galaxyRef.current = new THREE.Group();
+    sceneRef.current.add(galaxyRef.current);
     
     const insideColor = new THREE.Color();
     insideColor.setHSL(Math.random(), 0.8, 0.6);
@@ -168,14 +175,16 @@ const GalaxyCanvas = forwardRef<GalaxyCanvasHandle, GalaxyCanvasProps>(({ initia
       controls.dispose();
       
       if (galaxyRef.current) {
-         while(galaxyRef.current.children.length > 0){ 
-            const object = galaxyRef.current.children[0];
-            if (object instanceof THREE.Points) {
-                object.geometry.dispose();
-                (object.material as THREE.Material).dispose();
-            }
-            galaxyRef.current.remove(object); 
-         }
+        galaxyRef.current.traverse((object) => {
+             if (object instanceof THREE.Points) {
+                 object.geometry.dispose();
+                 if (Array.isArray(object.material)) {
+                     object.material.forEach(material => material.dispose());
+                 } else {
+                     object.material.dispose();
+                 }
+             }
+        });
       }
       
       renderer.dispose();
